@@ -11,7 +11,10 @@ export default function Home() {
           <span style={{ width: 26, height: 26, borderRadius: 8, background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>◈</span>
           Cardly
         </span>
-        <Link href="/login" style={{ background: '#fff', color: '#08060F', textDecoration: 'none', fontSize: 14, padding: '9px 20px', borderRadius: 100, fontWeight: 600 }}>Get started</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <Link href="/explore" style={{ color: '#A1A1AA', textDecoration: 'none', fontSize: 14 }}>Explore</Link>
+          <Link href="/login" style={{ background: '#fff', color: '#08060F', textDecoration: 'none', fontSize: 14, padding: '9px 20px', borderRadius: 100, fontWeight: 600 }}>Get started</Link>
+        </div>
       </nav>
 
       {/* ===== HERO ===== */}

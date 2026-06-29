@@ -9,6 +9,7 @@ export default function BookingPanel({ services, slots }: any) {
   const [booked, setBooked] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // group slots by date
   const byDate: Record<string, any[]> = {}
   slots.forEach((s: any) => {
     const d = new Date(s.slot_datetime)
@@ -22,8 +23,8 @@ export default function BookingPanel({ services, slots }: any) {
     if (slot.waiting) return 'waiting'
     return 'open'
   }
-  const dot: any = { open: '#30D158', waiting: '#FF9F0A', full: '#FF453A' }
-  const dotLabel: any = { open: 'Available', waiting: 'Waiting', full: 'Full' }
+  const dot = { open: '#30D158', waiting: '#FF9F0A', full: '#FF453A' }
+  const dotLabel = { open: 'Available', waiting: 'Waiting', full: 'Full' }
 
   async function book() {
     if (!selSlot) return
@@ -48,6 +49,8 @@ export default function BookingPanel({ services, slots }: any) {
 
   return (
     <div style={{ margin: '0 20px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+      {/* SERVICES */}
       {services.length > 0 && (
         <div>
           <p style={{ fontSize: 12, color: '#71717A', letterSpacing: '0.5px', fontWeight: 500, margin: '0 0 14px' }}>Services</p>
@@ -62,11 +65,12 @@ export default function BookingPanel({ services, slots }: any) {
         </div>
       )}
 
+      {/* AVAILABILITY */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 16px' }}>
           <p style={{ fontSize: 12, color: '#71717A', letterSpacing: '0.5px', fontWeight: 500, margin: 0 }}>Availability</p>
           <div style={{ display: 'flex', gap: 14 }}>
-            {['open','waiting','full'].map(k => (
+            {(['open','waiting','full'] as const).map(k => (
               <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#A1A1AA' }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot[k] }} />{dotLabel[k]}
               </span>
@@ -94,7 +98,7 @@ export default function BookingPanel({ services, slots }: any) {
                           borderRadius: 14, padding: '12px 8px', cursor: disabled ? 'not-allowed' : 'pointer',
                           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: disabled ? 0.5 : 1, transition: 'all 0.15s',
                         }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot[st] }} />
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: (dot as any)[st] }} />
                         <span style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : disabled ? '#FF453A' : '#fff' }}>
                           {new Date(sl.slot_datetime).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
                         </span>
@@ -108,6 +112,7 @@ export default function BookingPanel({ services, slots }: any) {
         )}
       </div>
 
+      {/* BOOK FORM */}
       {selSlot && (
         <div className="fade-up" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
