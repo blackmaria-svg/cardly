@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [services, setServices] = useState<any[]>([])
   const [menu, setMenu] = useState<any[]>([])
   const [slots, setSlots] = useState<any[]>([])
+  const [bookings, setBookings] = useState<any[]>([])
   const [newSv, setNewSv] = useState({ name: '', price: '', duration_minutes: '' })
   const [newMn, setNewMn] = useState({ name: '', description: '', price: '', category: '' })
   const [newSlot, setNewSlot] = useState('')
@@ -45,6 +46,7 @@ export default function Dashboard() {
         setMenu(mn||[])
         const { data: sl } = await supabase.from('booking_slots').select('*').eq('profile_id', p.id).order('slot_datetime')
         setSlots(sl||[])
+        setBookings((sl||[]).filter((x:any)=>x.is_booked))
       }
       setLoading(false)
     }
@@ -91,7 +93,7 @@ export default function Dashboard() {
   if (loading) return <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.font }}><p style={{ color: C.muted }}>Loading…</p></div>
 
   const tabs: any[] = [['profile','Profile','👤'], ['social','Social','🔗']]
-  if (form.business_type === 'barber') tabs.push(['services','Services','✂️'], ['slots','Slots','📅'])
+  if (form.business_type === 'barber') tabs.push(['services','Services','✂️'], ['slots','Slots','📅'], ['bookings','Bookings','📋'])
   if (form.business_type === 'food') tabs.push(['menu','Menu','🍜'], ['payment','Payment','💳'])
 
   return (
@@ -204,6 +206,30 @@ export default function Dashboard() {
               <div key={mn.id} style={{ background: C.card, border: C.border, borderRadius: 14, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div><p style={{ fontWeight: 600, margin: '0 0 3px' }}>{mn.name} <span style={{ fontSize: 11, color: C.purple }}>· {mn.category}</span></p><p style={{ fontSize: 13, color: C.muted, margin: 0 }}>RM {mn.price}</p></div>
                 <button onClick={()=>delMn(mn.id)} style={{ background: 'rgba(239,68,68,0.12)', color: '#F87171', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>Delete</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === 'bookings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ background: C.card, border: C.border, borderRadius: 20, padding: 24 }}>
+              <h2 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 6px' }}>Your bookings</h2>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{bookings.length} customer{bookings.length===1?'':'s'} booked</p>
+            </div>
+            {bookings.length === 0 ? (
+              <div style={{ background: C.card, border: C.border, borderRadius: 16, padding: 32, textAlign: 'center' }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
+                <p style={{ color: C.muted, fontSize: 14, margin: 0 }}>No bookings yet. Share your card to get some!</p>
+              </div>
+            ) : bookings.map(b => (
+              <div key={b.id} style={{ background: C.card, border: C.border, borderRadius: 16, padding: '16px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: 15, margin: '0 0 3px' }}>{b.customer_name || 'Customer'}</p>
+                  <p style={{ fontSize: 13, color: C.muted, margin: '0 0 4px' }}>{new Date(b.slot_datetime).toLocaleString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                  {b.customer_phone && <a href={'tel:'+b.customer_phone} style={{ fontSize: 13, color: C.lavender, textDecoration: 'none' }}>📞 {b.customer_phone}</a>}
+                </div>
+                {b.customer_phone && <a href={'https://wa.me/'+b.customer_phone.replace(/[^0-9]/g,'').replace(/^0/,'60')} target="_blank" style={{ background: 'rgba(34,197,94,0.12)', color: '#34D399', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 100, padding: '7px 14px', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>WhatsApp</a>}
               </div>
             ))}
           </div>
