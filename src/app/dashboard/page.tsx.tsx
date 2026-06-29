@@ -24,7 +24,7 @@ export default function Dashboard() {
   const [slots, setSlots] = useState<any[]>([])
   const [bookings, setBookings] = useState<any[]>([])
   const [newSv, setNewSv] = useState({ name: '', price: '', duration_minutes: '' })
-  const [newMn, setNewMn] = useState({ name: '', description: '', price: '', category: '' })
+  const [newMn, setNewMn] = useState({ name: '', description: '', price: '', category: '', stock: '' })
   const [newSlot, setNewSlot] = useState('')
   const [form, setForm] = useState({
     username: '', business_name: '', business_type: 'generic', bio: '',
@@ -46,7 +46,7 @@ export default function Dashboard() {
         setMenu(mn||[])
         const { data: sl } = await supabase.from('booking_slots').select('*').eq('profile_id', p.id).order('slot_datetime')
         setSlots(sl||[])
-        setBookings((sl||[]).filter((x:any)=>x.is_booked))
+        setBookings((sl||[]).filter((x:any)=>(x.booked_count||0)>0 || x.is_booked))
       }
       setLoading(false)
     }
@@ -68,14 +68,21 @@ export default function Dashboard() {
   async function delSv(id: string) { await supabase.from('services').delete().eq('id', id); setServices(services.filter(x=>x.id!==id)) }
   async function addMn() {
     if (!newMn.name || !profile) return
-    const { data } = await supabase.from('menu_items').insert({ name: newMn.name, description: newMn.description, price: parseFloat(newMn.price)||0, category: newMn.category||'Other', profile_id: profile.id }).select().single()
-    if (data) { setMenu([...menu, data]); setNewMn({ name:'', description:'', price:'', category:'' }) }
+    const { data } = await supabase.from('menu_items').insert({ name: newMn.name, description: newMn.description, price: parseFloat(newMn.price)||0, category: newMn.category||'Other', stock: parseInt(newMn.stock)||0, is_available: (parseInt(newMn.stock)||0)>0, profile_id: profile.id }).select().single()
+    if (data) { setMenu([...menu, data]); setNewMn({ name:'', description:'', price:'', category:'', stock:'' }) }
+  }
+  async function updateStock(id: string, stock: number) {
+    await supabase.from('menu_items').update({ stock, is_available: stock > 0 }).eq('id', id)
+    setMenu(menu.map(m => m.id === id ? { ...m, stock, is_available: stock > 0 } : m))
   }
   async function delMn(id: string) { await supabase.from('menu_items').delete().eq('id', id); setMenu(menu.filter(x=>x.id!==id)) }
   async function addSlot() {
     if (!newSlot || !profile) return
-    const { data } = await supabase.from('booking_slots').insert({ slot_datetime: newSlot, profile_id: profile.id, is_booked: false }).select().single()
-    if (data) { setSlots([...slots, data]); setNewSlot('') }
+    // newSlot is like "2026-07-01T10:00" (wall clock). Store with +08:00 so Malaysia time is preserved.
+    const iso = newSlot.length === 16 ? newSlot + ':00+08:00' : newSlot
+    const cap = form.business_type === 'barber' ? 1 : 10
+    const { data } = await supabase.from('booking_slots').insert({ slot_datetime: iso, profile_id: profile.id, is_booked: false, capacity: cap, booked_count: 0 }).select().single()
+    if (data) { setSlots([...slots, data].sort((a,b)=>new Date(a.slot_datetime).getTime()-new Date(b.slot_datetime).getTime())); setNewSlot('') }
   }
   async function delSlot(id: string) { await supabase.from('booking_slots').delete().eq('id', id); setSlots(slots.filter(x=>x.id!==id)) }
   async function upQr(e: any) {
@@ -173,7 +180,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ background: C.card, border: C.border, borderRadius: 20, padding: 24 }}>
               <h2 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 8px' }}>Add booking slot</h2>
-              <p style={{ fontSize: 13, color: C.muted, margin: '0 0 16px' }}>Pick a date and time customers can book</p>
+              <p style={{ fontSize: 13, color: C.muted, margin: '0 0 16px' }}>{form.business_type === 'barber' ? 'Each slot = 1 customer.' : 'Each slot fits up to 10 people.'} Pick date and time.</p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <input type="datetime-local" style={inputStyle} value={newSlot} onChange={e=>setNewSlot(e.target.value)} />
                 <button onClick={addSlot} style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)', color: '#fff', border: 'none', borderRadius: 12, padding: '0 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
@@ -181,7 +188,7 @@ export default function Dashboard() {
             </div>
             {slots.map(sl=>(
               <div key={sl.id} style={{ background: C.card, border: C.border, borderRadius: 14, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><p style={{ fontWeight: 600, margin: '0 0 3px' }}>{new Date(sl.slot_datetime).toLocaleString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p><p style={{ fontSize: 12, color: sl.is_booked?'#F87171':'#34D399', margin: 0 }}>{sl.is_booked?'Booked by '+(sl.customer_name||'customer'):'Available'}</p></div>
+                <div><p style={{ fontWeight: 600, margin: '0 0 3px' }}>{new Date(sl.slot_datetime).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p><p style={{ fontSize: 12, color: sl.is_booked?'#F87171':'#34D399', margin: 0 }}>{sl.is_booked?'Booked by '+(sl.customer_name||'customer'):'Available'}</p></div>
                 <button onClick={()=>delSlot(sl.id)} style={{ background: 'rgba(239,68,68,0.12)', color: '#F87171', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>Delete</button>
               </div>
             ))}
@@ -199,12 +206,14 @@ export default function Dashboard() {
                   <input style={inputStyle} placeholder="Price (8.50)" value={newMn.price} onChange={e=>setNewMn({...newMn, price: e.target.value})} />
                   <input style={inputStyle} placeholder="Category (Rice)" value={newMn.category} onChange={e=>setNewMn({...newMn, category: e.target.value})} />
                 </div>
+                <input style={inputStyle} placeholder="Stock quantity (20)" value={newMn.stock} onChange={e=>setNewMn({...newMn, stock: e.target.value})} />
                 <button onClick={addMn} style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)', color: '#fff', border: 'none', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+ Add item</button>
               </div>
             </div>
             {menu.map(mn=>(
-              <div key={mn.id} style={{ background: C.card, border: C.border, borderRadius: 14, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div><p style={{ fontWeight: 600, margin: '0 0 3px' }}>{mn.name} <span style={{ fontSize: 11, color: C.purple }}>· {mn.category}</span></p><p style={{ fontSize: 13, color: C.muted, margin: 0 }}>RM {mn.price}</p></div>
+              <div key={mn.id} style={{ background: C.card, border: C.border, borderRadius: 14, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}><p style={{ fontWeight: 600, margin: '0 0 3px' }}>{mn.name} <span style={{ fontSize: 11, color: C.purple }}>· {mn.category}</span></p><p style={{ fontSize: 13, color: C.muted, margin: 0 }}>RM {mn.price} · {(mn.stock||0)<=0 ? <span style={{color:'#F87171'}}>Sold out</span> : (mn.stock+' in stock')}</p></div>
+                <input type="number" value={mn.stock||0} onChange={e=>updateStock(mn.id, parseInt(e.target.value)||0)} style={{ width: 56, background: 'rgba(255,255,255,0.06)', border: C.border, borderRadius: 8, padding: '7px', color: C.text, fontSize: 13, outline: 'none', textAlign: 'center' }} />
                 <button onClick={()=>delMn(mn.id)} style={{ background: 'rgba(239,68,68,0.12)', color: '#F87171', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>Delete</button>
               </div>
             ))}
@@ -226,7 +235,7 @@ export default function Dashboard() {
               <div key={b.id} style={{ background: C.card, border: C.border, borderRadius: 16, padding: '16px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <p style={{ fontWeight: 600, fontSize: 15, margin: '0 0 3px' }}>{b.customer_name || 'Customer'}</p>
-                  <p style={{ fontSize: 13, color: C.muted, margin: '0 0 4px' }}>{new Date(b.slot_datetime).toLocaleString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                  <p style={{ fontSize: 13, color: C.muted, margin: '0 0 4px' }}>{new Date(b.slot_datetime).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                   {b.customer_phone && <a href={'tel:'+b.customer_phone} style={{ fontSize: 13, color: C.lavender, textDecoration: 'none' }}>📞 {b.customer_phone}</a>}
                 </div>
                 {b.customer_phone && <a href={'https://wa.me/'+b.customer_phone.replace(/[^0-9]/g,'').replace(/^0/,'60')} target="_blank" style={{ background: 'rgba(34,197,94,0.12)', color: '#34D399', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 100, padding: '7px 14px', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>WhatsApp</a>}
