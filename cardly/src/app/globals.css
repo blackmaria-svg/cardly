@@ -1,0 +1,33 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #08060F; }
+body { -webkit-font-smoothing: antialiased; }
+::selection { background: rgba(139,92,246,0.4); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.fade-up { animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+.float { animation: float 6s ease-in-out infinite; }
+.glow { animation: glow 4s ease-in-out infinite; }
+
+input::placeholder, textarea::placeholder { color: #52525B; }
+input:focus, textarea:focus, select:focus { border-color: rgba(139,92,246,0.5) !important; }
+button { font-family: inherit; }
+a { -webkit-tap-highlight-color: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, .fade-up, .float, .glow { animation: none !important; }
+}
