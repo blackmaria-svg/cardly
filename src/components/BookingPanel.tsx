@@ -1,97 +1,73 @@
- 'use client'
+'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-export default function BookingPanel({ profileId, services, slots }: any) {
-  const [selectedService, setSelectedService] = useState<string>('')
-  const [selectedSlot, setSelectedSlot] = useState<string>('')
+export default function BookingPanel({ services, slots }: any) {
+  const [selSlot, setSelSlot] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [booked, setBooked] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const filteredSlots = slots.filter((s: any) =>
-    !selectedService || s.service_id === selectedService
-  )
-
-  async function handleBook() {
-    if (!selectedSlot || !name || !phone) return alert('Please fill in all fields')
-    const { error } = await supabase
-      .from('booking_slots')
-      .update({ is_booked: true, customer_name: name, customer_phone: phone })
-      .eq('id', selectedSlot)
-    if (!error) setBooked(true)
-    else alert('Booking failed, please try again')
+  async function book() {
+    if (!selSlot) return alert('Pick a time slot')
+    if (!name || !phone) return alert('Enter your name and phone')
+    setBusy(true)
+    const { error } = await supabase.from('booking_slots').update({ is_booked: true, customer_name: name, customer_phone: phone }).eq('id', selSlot)
+    setBusy(false)
+    if (!error) setBooked(true); else alert('Booking failed, try again')
   }
 
   if (booked) return (
-    <div className="mx-4 p-6 bg-green-50 rounded-2xl text-center">
-      <div className="text-4xl mb-2">✓</div>
-      <p className="font-semibold text-green-800">Booking confirmed!</p>
-      <p className="text-green-600 text-sm mt-1">We will see you soon, {name}.</p>
+    <div style={{ margin: '0 20px' }}>
+      <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 20, padding: 32, textAlign: 'center' }}>
+        <div style={{ fontSize: 44, marginBottom: 12 }}>✓</div>
+        <p style={{ color: '#fff', fontWeight: 700, fontSize: 18, margin: '0 0 6px' }}>Booking confirmed!</p>
+        <p style={{ color: '#86EFAC', fontSize: 14, margin: 0 }}>See you soon, {name}.</p>
+      </div>
     </div>
   )
 
+  const inp: any = { width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '13px 16px', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }
+
   return (
-    <div className="mx-4">
-      <h2 className="font-semibold text-lg mb-3">Book a slot</h2>
+    <div style={{ margin: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {services.length > 0 && (
+        <div>
+          <p style={{ fontSize: 11, color: '#8B5CF6', letterSpacing: '1px', fontWeight: 600, margin: '0 0 12px' }}>✂️ SERVICES</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {services.map((s:any)=>(
+              <div key={s.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div><p style={{ color: '#fff', fontWeight: 600, margin: '0 0 3px', fontSize: 15 }}>{s.name}</p><p style={{ color: '#71717A', fontSize: 12, margin: 0 }}>{s.duration_minutes} min</p></div>
+                <span style={{ color: '#C4B5FD', fontWeight: 700, fontSize: 15 }}>RM {s.price}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-      <div className="mb-3">
-        <label className="text-sm text-gray-500 mb-1 block">Select service</label>
-        <select
-          className="w-full border border-gray-200 rounded-xl px-3 py-2 bg-white"
-          value={selectedService}
-          onChange={e => setSelectedService(e.target.value)}
-        >
-          <option value="">All services</option>
-          {services.map((s: any) => (
-            <option key={s.id} value={s.id}>
-              {s.name} — RM{s.price} ({s.duration_minutes} min)
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <label className="text-sm text-gray-500 mb-2 block">Select a time slot</label>
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        {filteredSlots.length === 0 && (
-          <p className="text-sm text-gray-400 col-span-2">No available slots</p>
+      <div>
+        <p style={{ fontSize: 11, color: '#8B5CF6', letterSpacing: '1px', fontWeight: 600, margin: '0 0 12px' }}>📅 PICK A SLOT</p>
+        {slots.length === 0 ? (
+          <p style={{ color: '#52525B', fontSize: 14 }}>No slots available right now.</p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {slots.map((sl:any)=>(
+              <button key={sl.id} onClick={()=>setSelSlot(sl.id)} style={{ background: selSlot===sl.id?'linear-gradient(135deg,#8B5CF6,#6D28D9)':'rgba(255,255,255,0.04)', border: selSlot===sl.id?'1px solid #8B5CF6':'1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px', color: '#fff', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}>
+                {new Date(sl.slot_datetime).toLocaleString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </button>
+            ))}
+          </div>
         )}
-        {filteredSlots.map((slot: any) => (
-          <button
-            key={slot.id}
-            onClick={() => setSelectedSlot(slot.id)}
-            className={`border rounded-xl p-3 text-sm text-left ${
-              selectedSlot === slot.id
-                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                : 'border-gray-200 bg-white text-gray-700'
-            }`}
-          >
-            {new Date(slot.slot_datetime).toLocaleString('en-MY', {
-              weekday: 'short', month: 'short', day: 'numeric',
-              hour: '2-digit', minute: '2-digit'
-            })}
-          </button>
-        ))}
       </div>
 
-      <input
-        placeholder="Your name"
-        className="w-full border border-gray-200 rounded-xl px-3 py-2 mb-2 text-sm"
-        value={name}
-        onChange={e => setName(e.target.value)}
-      />
-      <input
-        placeholder="Phone number (e.g. 0123456789)"
-        className="w-full border border-gray-200 rounded-xl px-3 py-2 mb-4 text-sm"
-        value={phone}
-        onChange={e => setPhone(e.target.value)}
-      />
-      <button
-        onClick={handleBook}
-        className="w-full bg-purple-600 text-white py-3 rounded-xl font-medium hover:bg-purple-700 transition"
-      >
-        Confirm booking
-      </button>
+      {slots.length > 0 && (
+        <>
+          <input style={inp} placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} />
+          <input style={inp} placeholder="Phone number" value={phone} onChange={e=>setPhone(e.target.value)} />
+          <button onClick={book} disabled={busy} style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)', color: '#fff', border: 'none', borderRadius: 14, padding: '15px', fontSize: 15, fontWeight: 700, cursor: 'pointer', opacity: busy?0.6:1 }}>{busy?'Booking…':'Confirm booking'}</button>
+        </>
+      )}
     </div>
   )
 }

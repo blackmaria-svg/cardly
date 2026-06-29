@@ -1,56 +1,34 @@
- 'use client'
-import Image from 'next/image'
+'use client'
 
 export default function ProfileCard({ profile }: { profile: any }) {
+  const socials = [
+    { key: 'instagram', label: 'Instagram', color: '#EC4899', url: (v:string)=>`https://instagram.com/${v}` },
+    { key: 'tiktok', label: 'TikTok', color: '#fff', url: (v:string)=>`https://tiktok.com/@${v}` },
+    { key: 'facebook', label: 'Facebook', color: '#3B82F6', url: (v:string)=>`https://facebook.com/${v}` },
+    { key: 'whatsapp', label: 'WhatsApp', color: '#22C55E', url: (v:string)=>`https://wa.me/${v}` },
+  ].filter(s => profile[s.key])
+
   return (
-    <div className="bg-white rounded-b-3xl shadow-sm pb-6 mb-4">
-      <div className="h-32 bg-gradient-to-r from-violet-500 to-purple-600 rounded-b-3xl"/>
-      <div className="px-4 -mt-12 flex flex-col items-center text-center">
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ height: 150, background: 'linear-gradient(135deg,#8B5CF6,#5B21B6)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, background: 'radial-gradient(circle,rgba(255,255,255,0.2),transparent 70%)', borderRadius: '50%' }} />
+      </div>
+      <div style={{ padding: '0 20px', marginTop: -44, textAlign: 'center', position: 'relative' }}>
         {profile.profile_image_url ? (
-          <Image
-            src={profile.profile_image_url}
-            alt={profile.business_name}
-            width={80} height={80}
-            className="w-20 h-20 rounded-full border-4 border-white object-cover"
-          />
+          <img src={profile.profile_image_url} alt={profile.business_name} style={{ width: 88, height: 88, borderRadius: '50%', border: '4px solid #08060F', objectFit: 'cover', margin: '0 auto', display: 'block' }} />
         ) : (
-          <div className="w-20 h-20 rounded-full border-4 border-white bg-purple-200 flex items-center justify-center text-2xl font-bold text-purple-700">
-            {profile.business_name?.[0]}
+          <div style={{ width: 88, height: 88, borderRadius: '50%', border: '4px solid #08060F', background: 'linear-gradient(135deg,#A78BFA,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 700, color: '#fff', margin: '0 auto' }}>{profile.business_name?.[0]||'?'}</div>
+        )}
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', letterSpacing: '-0.5px', margin: '14px 0 4px' }}>{profile.business_name}</h1>
+        {profile.bio && <p style={{ fontSize: 14, color: '#A1A1AA', lineHeight: 1.5, margin: '0 0 12px', maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>{profile.bio}</p>}
+        {profile.phone && <a href={`tel:${profile.phone}`} style={{ fontSize: 14, color: '#C4B5FD', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}>📞 {profile.phone}</a>}
+        {socials.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+            {socials.map(s => (
+              <a key={s.key} href={s.url(profile[s.key])} target="_blank" rel="noreferrer" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: s.color, textDecoration: 'none', fontSize: 13, fontWeight: 500, padding: '8px 16px', borderRadius: 100 }}>{s.label}</a>
+            ))}
           </div>
         )}
-        <h1 className="mt-3 text-xl font-semibold">{profile.business_name}</h1>
-        <p className="text-gray-500 text-sm mt-1">{profile.bio}</p>
-        {profile.phone && (
-          <a href={`tel:${profile.phone}`} className="mt-2 text-purple-600 text-sm">
-            {profile.phone}
-          </a>
-        )}
-        <div className="flex gap-3 mt-4 flex-wrap justify-center">
-          {profile.instagram && (
-            <a href={`https://instagram.com/${profile.instagram}`}
-               className="bg-pink-100 text-pink-600 px-4 py-1.5 rounded-full text-sm font-medium">
-              Instagram
-            </a>
-          )}
-          {profile.tiktok && (
-            <a href={`https://tiktok.com/@${profile.tiktok}`}
-               className="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium">
-              TikTok
-            </a>
-          )}
-          {profile.whatsapp && (
-            <a href={`https://wa.me/${profile.whatsapp}`}
-               className="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-medium">
-              WhatsApp
-            </a>
-          )}
-          {profile.facebook && (
-            <a href={`https://facebook.com/${profile.facebook}`}
-               className="bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-medium">
-              Facebook
-            </a>
-          )}
-        </div>
       </div>
     </div>
   )
